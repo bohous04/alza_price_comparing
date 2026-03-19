@@ -12,14 +12,18 @@ const app = new Hono();
 import type { Context, Next } from "hono";
 
 const authMiddleware = async (c: Context, next: Next) => {
+  // Support both header and query parameter auth
   const authHeader = c.req.header("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return c.json(
-      { error: "UNAUTHORIZED", message: "Invalid or missing API key" },
-      401
-    );
+  const queryKey = c.req.query("key");
+
+  let apiKey: string | null = null;
+  if (authHeader?.startsWith("Bearer ")) {
+    apiKey = authHeader.slice(7);
+  } else if (queryKey) {
+    apiKey = queryKey;
   }
-  if (authHeader.slice(7) !== config.apiKey) {
+
+  if (!apiKey || apiKey !== config.apiKey) {
     return c.json(
       { error: "UNAUTHORIZED", message: "Invalid or missing API key" },
       401
